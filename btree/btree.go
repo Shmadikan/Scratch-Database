@@ -59,7 +59,7 @@ func (node BNode) get_offset(idx uint16) (uint16, error) {
 	return binary.LittleEndian.Uint16(node[offset:]), nil
 }
 
-func (node BNODE) set_offset(idx uint16, offset_value uint16) error {
+func (node BNode) set_offset(idx uint16, offset_value uint16) error {
 	if (idx > node.bnode_keys_count()) {
 		return errors.New("Index out of range")
 	}
