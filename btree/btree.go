@@ -41,12 +41,20 @@ func (node BNode) child_pointer(idx uint16) (uint64, error) {
 	return binary.LittleEndian.Uint64(node[child_ptr:child_ptr+9]), nil
 } 
 
-func (node BNode) set_pointer(idx uint16, ptr uint64)  error {
+func (node BNode) set_pointer(idx uint16, ptr uint64) error {
 	if (idx > node.bnode_keys_count()) {
 		return errors.New("Index ouf of range")
 	}
 	child_ptr := HEADER + idx*8
 	binary.LittleEndian.PutUint64(node[child_ptr:child_ptr+9], ptr)
+	return nil
 }
 
+func (node BNode) get_offset(idx uint16) (uint16, error) {
+	if (idx > node.bnode_keys_count()){
+		return 0, errors.New("Index out of range")
+	}
 
+	offset := HEADER + node.bnode_keys_count()*8 + 2*idx
+	return binary.LittleEndian.Uint16(node[offset:]), nil
+}
