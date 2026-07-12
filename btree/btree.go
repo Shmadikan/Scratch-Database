@@ -115,3 +115,26 @@ func (node BNode) get_value(idx uint16) []byte {
 func (node BNode) nbytes() uint16 {
 	return node.keyValuePosition(node.bnode_keys_count())
 }
+
+
+
+
+// Меньше или равный ключ ищем
+func LookupKeyLE (node BNode, key []byte) uint16 {
+	nkeys := node.bnode_keys_count()
+	
+	found_key := uint16(0)
+	for i := uint16(1); i < nkeys; i++ {
+		cmp := bytes.Compare(node.get_key(i), key)
+		if (cmp <= 0) {
+			found_key = i
+		}
+		if (cmp >= 0) {
+			break
+		}
+
+	}
+	return found_key
+}
+
+
