@@ -109,3 +109,9 @@ func (node BNode) get_value(idx uint16) []byte {
 	keylen := binary.LittleEndian.Uint16(node[offset:])
 	return node[offset+4+keylen:][:value_len]
 }
+
+
+// На позиции последнего оффсета размер ноды в байтах
+func (node BNode) nbytes() uint16 {
+	return node.keyValuePosition(node.bnode_keys_count())
+}
