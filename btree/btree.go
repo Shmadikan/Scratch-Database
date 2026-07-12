@@ -138,3 +138,38 @@ func LookupKeyLE (node BNode, key []byte) uint16 {
 }
 
 
+// Функция Insert в Node новый Key/value, предназначена как для листьев, так и для внутренних узлов
+func nodeAppendKV(node BNode, idx uint16, ptr uint64, key []byte, value []byte) {
+	node.set_pointer(idx, ptr)
+	
+	key_position := node.keyValuePosition(idx)
+	node.set_header(2, node.bnode_keys_count() + uint16(1))
+	binary.LittleEndian.PutUint16(node[key_position:], uint16(len(key)))
+	binary.LittleEndian.PutUint16(node[key_position + 2:], uint16(len(value)))
+
+	copy(node[key_position + 4 :], key)
+	copy(node[key_position + 4 + uint16(len(key)):], value)
+
+	offset,_ := node.get_offset(idx)
+	node.set_offset(idx + 1, offset + 4 + uint16(len(key) + len(value)))
+}
+
+// Вставка нескольких элементов со второй ноды (старая) в первую (новая). dstNew - куда начать вставку в новой ноде, srcOld - откуда брать элементы в старой. n - число элементов 
+func nodeAppendRange(new BNode, old BNode, dstNew uint16, srcOld uint16, n uint16) {
+	insertIndex := dstNew 
+	for i := srcOld; i < n + srcOld; i++ {
+		key := old.get_key(i)
+		val := old.get_value(i)
+		nodeAppendKV(new, insertIndex, 0, key, val)
+		insertIndex++
+	}
+}
+
+
+// Copy on Write вставка
+func leafInsert(new BNode, old BNode, idx uint16, key []byte, value []byte) {
+	new.set_header(2, old.bnode_keys_count() + 1)
+	nodeAppendRange(new, old, 0, 0, idx)
+	nodeAppendKV(new, idx, 0, key, value)
+	nodeAppendRange(new, old, idx+1, idx, old.bnode_keys_count() - idx)
+}
