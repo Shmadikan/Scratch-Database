@@ -3,6 +3,7 @@ package btree
 import (
 	"encoding/binary"
 	"errors"
+	"bytes"
 )
 
 type BNode []byte
@@ -73,7 +74,7 @@ func (node BNode) get_offset(idx uint16) (uint16, error) {
 	return binary.LittleEndian.Uint16(node[offset:]), nil
 }
 
-// Поставить n-ое смещение
+// Установить значение для n-го смещения
 func (node BNode) set_offset(idx uint16, offset_value uint16) error {
 	if (idx > node.bnode_keys_count()) {
 		return errors.New(IndexERROR)
