@@ -8,7 +8,7 @@ import (
 type BNode []byte
 
 const HEADER = 4
-
+const IndexERROR = "Index out of range"
 
 // Node представлена как последовательность байтов
 type Btree struct {
@@ -43,27 +43,68 @@ func (node BNode) child_pointer(idx uint16) (uint64, error) {
 
 func (node BNode) set_pointer(idx uint16, ptr uint64) error {
 	if (idx > node.bnode_keys_count()) {
-		return errors.New("Index ouf of range")
+		return errors.New(IndexERROR)
 	}
 	child_ptr := HEADER + idx*8
 	binary.LittleEndian.PutUint64(node[child_ptr:child_ptr+9], ptr)
 	return nil
 }
 
+
+
+func offsetPos(node BNode, idx uint16) (uint16, error) {
+	if idx < 1 || idx > node.bnode_keys_count() {
+		return 0, errors.New(IndexERROR)
+	}
+	return HEADER + 8*node.bnode_keys_count() + 2*(idx-1), nil
+}
+
+
+// декодировать значение n-го смещение
 func (node BNode) get_offset(idx uint16) (uint16, error) {
 	if (idx > node.bnode_keys_count()){
-		return 0, errors.New("Index out of range")
+		return 0, errors.New(IndexERROR)
+	}
+	if (idx == 0) {
+		return 0, nil
 	}
 
-	offset := HEADER + node.bnode_keys_count()*8 + 2*idx
+	offset,_ := offsetPos(node, idx)
 	return binary.LittleEndian.Uint16(node[offset:]), nil
 }
 
+// Поставить n-ое смещение
 func (node BNode) set_offset(idx uint16, offset_value uint16) error {
 	if (idx > node.bnode_keys_count()) {
-		return errors.New("Index out of range")
+		return errors.New(IndexERROR)
 	}
-	offset := HEADER + node.bnode_keys_count()*8 + 2*idx
+	offset, _ := offsetPos(node, idx)
 	binary.LittleEndian.PutUint16(node[offset:], offset_value)
 	return nil
+}
+
+
+// Получить значение байт смещения для ключа по индексу смещения
+func (node BNode) keyValuePosition(idx uint16) uint16 {
+	offset, error := node.get_offset(idx)
+	if (error != nil) {
+		return 0
+	}
+	return HEADER + 8*node.bnode_keys_count() + 2*node.bnode_keys_count() + offset
+
+}
+
+
+// Получить ключ по смещению
+func (node BNode) get_key(idx uint16) []byte {
+	offset := node.keyValuePosition(idx)
+	keylen := binary.LittleEndian.Uint16(node[offset:])
+	return node[offset+4:][:keylen]
+}
+
+func (node BNode) get_value(idx uint16) []byte {
+	offset := node.keyValuePosition(idx)
+	value_len := binary.LittleEndian.Uint16(node[(offset + 2):])
+	keylen := binary.LittleEndian.Uint16(node[offset:])
+	return node[offset+4+keylen:][:value_len]
 }
