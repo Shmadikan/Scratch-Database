@@ -175,7 +175,7 @@ func leafInsert(new BNode, old BNode, idx uint16, key []byte, value []byte) {
 }
 
 
-// 
+// Вставка во внутренний узел
 func NkidInsert(tree *Btree, new BNode, old BNode, idx uint16, kids ...BNode) {
 	kid_count := uint16(len(kids))
 	new.set_header(1, old.bnode_keys_count() + kid_count)
