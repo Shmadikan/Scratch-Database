@@ -143,7 +143,6 @@ func nodeAppendKV(node BNode, idx uint16, ptr uint64, key []byte, value []byte) 
 	node.set_pointer(idx, ptr)
 	
 	key_position := node.keyValuePosition(idx)
-	node.set_header(2, node.bnode_keys_count() + uint16(1))
 	binary.LittleEndian.PutUint16(node[key_position:], uint16(len(key)))
 	binary.LittleEndian.PutUint16(node[key_position + 2:], uint16(len(value)))
 
