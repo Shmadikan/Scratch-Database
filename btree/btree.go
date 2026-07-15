@@ -191,7 +191,7 @@ func NkidInsert(tree *Btree, new BNode, old BNode, idx uint16, kids ...BNode) {
 }
 
 // Деление ноды на 2, вторая нода всегда вмещается в размер страницы
-func SplitNode2(old BNode, left BNode, right BNode) (uint16, uint16){
+func SplitNode2(old BNode, left BNode, right BNode){
 	
 	header_type := old.bnode_type()
 	header_key_size := old.bnode_keys_count()
