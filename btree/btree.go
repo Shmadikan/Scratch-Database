@@ -33,6 +33,8 @@ func (node BNode) set_header(type_node uint16, keys_len uint16) {
 	binary.LittleEndian.PutUint16(node[2:4], keys_len)
 }
 
+
+// Получить ребёнка ноды
 func (node BNode) child_pointer(idx uint16) (uint64, error) {
 	if (idx > node.bnode_keys_count()) {
 		return 0, errors.New("Not match keys")
@@ -85,7 +87,7 @@ func (node BNode) set_offset(idx uint16, offset_value uint16) error {
 }
 
 
-// Получить значение байт смещения для ключа по индексу смещения
+// Получить абсолютную позицию KV 
 func (node BNode) keyValuePosition(idx uint16) uint16 {
 	offset, error := node.get_offset(idx)
 	if (error != nil) {
