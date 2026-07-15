@@ -9,6 +9,9 @@ import (
 type BNode []byte
 
 const HEADER = 4
+const PTR_SIZE = 8
+const OFFSET_SIZE = 2
+const PAGE_SIZE = 4096
 const IndexERROR = "Index out of range"
 
 // Node представлена как последовательность байтов
