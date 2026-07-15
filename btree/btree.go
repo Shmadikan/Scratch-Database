@@ -226,6 +226,25 @@ func SplitNode2(old BNode, left BNode, right BNode){
 		child_node, _ := old.child_pointer(index)
 		nodeAppendKV(left, index, child_node, key, value)
 	}
+}
+
+// Сплитим на 3 ноды
+func SpliteNode3(old BNode) (uint16, [3]BNode) {
+	if old.nbytes() <= PAGE_SIZE {
+		old = old[:PAGE_SIZE]
+		return 1, [3]BNode{old}
+	}
+	left := make(BNode, 3*PAGE_SIZE)
+	right := make(BNode, PAGE_SIZE)
+	SplitNode2(old, left, right)
+	if left.nbytes() <= PAGE_SIZE {
+		left = left[:PAGE_SIZE]
+		return 2, [3]BNode{left, right}
+	}
+	middle := make(BNode, PAGE_SIZE)
+	left_end := make(BNode, PAGE_SIZE)
+	SplitNode2(left, left_end, middle)
+	return 3, [3]BNode{right, middle, left_end} 
 
 }
 
