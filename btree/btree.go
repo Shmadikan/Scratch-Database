@@ -186,3 +186,43 @@ func NkidInsert(tree *Btree, new BNode, old BNode, idx uint16, kids ...BNode) {
 	nodeAppendRange(new, old, idx+kid_count, idx+kid_count-1, old.bnode_keys_count() - (idx + kid_count) - uint16(1))
 }
 
+// Деление ноды на 2, вторая нода всегда вмещается в размер страницы
+func SplitNode2(old BNode, left BNode, right BNode) (uint16, uint16){
+	
+	header_type := old.bnode_type()
+	header_key_size := old.bnode_keys_count()
+	
+	right_node_size := HEADER
+	index := uint16(0)
+	for ; index < header_key_size; index++ {
+		right_node_size += PTR_SIZE
+		child_node,_ := old.child_pointer(index)
+		
+		
+		offset, _ := old.get_offset(index)
+		right.set_offset(index, offset)
+		right_node_size += OFFSET_SIZE
+
+		key := old.get_key(index)
+		value := old.get_value(index)
+		key_size := len(key)
+		value_size := len(value)
+		right_node_size += key_size + value_size
+		if right_node_size > PAGE_SIZE {
+			break
+		}
+		
+		nodeAppendKV(right, index, child_node, key, value)
+	}
+	right.set_header(header_type, index + 1)
+
+	for ; index < header_key_size; index ++ {
+		key := old.get_key(index)
+		value := old.get_value(index)
+		child_node, _ := old.child_pointer(index)
+		nodeAppendKV(left, index, child_node, key, value)
+	}
+
+}
+
+
