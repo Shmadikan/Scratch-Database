@@ -251,3 +251,28 @@ func SpliteNode3(old BNode) (uint16, [3]BNode) {
 }
 
 
+func NodeInsert(tree *Btree, new BNode, old BNode, idx uint16, key []byte, val []byte) {
+	ptr,_ := old.child_pointer(idx)
+	node := TreeInsert(tree, tree.get_node(ptr), key, val)
+	number_node, split := SpliteNode3(node)
+	NkidInsert(tree, new, old, idx, split[:number_node]...)
+}
+
+
+// Метод для добавления нового элемента в B-tree
+func TreeInsert(tree *Btree, node BNode, key []byte, val[]byte) BNode {
+	new := BNode(make([]byte, 2*PAGE_SIZE))
+	
+	idx_insert := LookupKeyLE(node, key)
+	if node.bnode_type() == LEAF {
+		leafInsert(new, node, idx_insert + 1, key, val)
+		// Сделать при равенстве значений
+	} else {
+		NodeInsert(tree, new, node, idx_insert, key, val)
+	}
+	return new
+}
+
+
+
+
