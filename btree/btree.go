@@ -13,6 +13,8 @@ const PTR_SIZE = 8
 const OFFSET_SIZE = 2
 const PAGE_SIZE = 4096
 const IndexERROR = "Index out of range"
+const LEAF = 2
+const INTERNAL_NODE = 1
 
 // Node представлена как последовательность байтов
 type Btree struct {
