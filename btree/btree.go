@@ -130,18 +130,18 @@ func (node BNode) nbytes() uint16 {
 func LookupKeyLE (node BNode, key []byte) uint16 {
 	nkeys := node.bnode_keys_count()
 	
-	found_key := uint16(0)
+	key_index := uint16(0)
 	for i := uint16(1); i < nkeys; i++ {
 		cmp := bytes.Compare(node.get_key(i), key)
 		if (cmp <= 0) {
-			found_key = i
+			key_index = i
 		}
 		if (cmp >= 0) {
 			break
 		}
 
 	}
-	return found_key
+	return key_index
 }
 
 
