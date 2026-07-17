@@ -275,4 +275,36 @@ func TreeInsert(tree *Btree, node BNode, key []byte, val[]byte) BNode {
 
 
 
+// Высокуровнеый insert
+func (tree *Btree) Insert(key []byte, val []byte){
+	if tree.root_number_page == 0 {
+		root := BNode(make([]byte, PAGE_SIZE))
+		root.set_header(LEAF, 2)
+		nodeAppendKV(root, 0, 0, nil, nil) // Сторожевое значение, чтобы всегда что то находилось, акутально только в начале
+		nodeAppendKV(root, 1, 0, key, val)
+		tree.root_number_page = tree.new(root)
+		return
+	}
+
+	node := TreeInsert(tree, tree.get_node(tree.root_number_page), key, val)
+	
+	nsplit, split := SpliteNode3(node)
+	tree.delete_node(tree.root_number_page)
+	if nsplit > 1 {
+		root := BNode(make([]byte, PAGE_SIZE))
+		root.set_header(INTERNAL_NODE, nsplit)
+		for i, node := range(split[:nsplit]) {
+			ptr, key := tree.new(node), node.get_key(0)
+			nodeAppendKV(root, uint16(i), ptr, key, nil)
+		}
+		tree.root_number_page = tree.new(root)
+		// [1,1000]
+		// [1,...,1000],[1000, 10000]
+
+	} else {
+		tree.root_number_page = tree.new(split[0])
+	}
+	
+	
+}
 
