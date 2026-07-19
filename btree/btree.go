@@ -304,7 +304,35 @@ func (tree *Btree) Insert(key []byte, val []byte){
 	} else {
 		tree.root_number_page = tree.new(split[0])
 	}
-	
-	
 }
+
+
+func leafDelete(new BNode, old BNode, idx uint16) {
+	nodeAppendRange(new, old, 0, 0, idx - 1)
+	nodeAppendRange(new, old, idx, idx+1, old.bnode_keys_count() - idx + 1)
+}
+
+func shouldMerge(tree *Btree, parentNode BNode, idx uint16, updated_kidNode BNode) (int, BNode) {
+	if updated_kidNode.nbytes() >= PAGE_SIZE / 4 {
+		return 0, BNode{}
+	}
+	kid_ptr, _ := parentNode.get_kidPointer(idx-1)
+	left := tree.get_node(kid_ptr)
+	if idx > 0{
+		if left.nbytes() + updated_kidNode.nbytes() - HEADER <= PAGE_SIZE{
+			return -1, left
+		}
+	}
+	kid_ptr, _ = parentNode.get_kidPointer(idx+1)
+	right := tree.get_node(kid_ptr)
+	if idx + 1 < parentNode.bnode_keys_count() {
+		if right.nbytes() + updated_kidNode.nbytes() - HEADER <= PAGE_SIZE {
+			return 1, right
+		}
+	}
+	return 0, BNode{}
+}
+
+
+
 
