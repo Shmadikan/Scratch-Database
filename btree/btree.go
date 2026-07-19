@@ -40,7 +40,7 @@ func (node BNode) set_header(type_node uint16, keys_len uint16) {
 
 
 // Получить ребёнка ноды
-func (node BNode) child_pointer(idx uint16) (uint64, error) {
+func (node BNode) get_kidPointer(idx uint16) (uint64, error) {
 	if (idx > node.bnode_keys_count()) {
 		return 0, errors.New("Not match keys")
 	}
