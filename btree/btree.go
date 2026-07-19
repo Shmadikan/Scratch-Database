@@ -202,7 +202,7 @@ func SplitNode2(old BNode, left BNode, right BNode){
 	index := uint16(0)
 	for ; index < header_key_size; index++ {
 		right_node_size += PTR_SIZE
-		child_node,_ := old.child_pointer(index)
+		child_node,_ := old.get_kidPointer(index)
 		
 		
 		offset, _ := old.get_offset(index)
@@ -225,7 +225,7 @@ func SplitNode2(old BNode, left BNode, right BNode){
 	for ; index < header_key_size; index ++ {
 		key := old.get_key(index)
 		value := old.get_value(index)
-		child_node, _ := old.child_pointer(index)
+		child_node, _ := old.get_kidPointer(index)
 		nodeAppendKV(left, index, child_node, key, value)
 	}
 }
@@ -252,7 +252,7 @@ func SpliteNode3(old BNode) (uint16, [3]BNode) {
 
 
 func NodeInsert(tree *Btree, new BNode, old BNode, idx uint16, key []byte, val []byte) {
-	ptr,_ := old.child_pointer(idx)
+	ptr,_ := old.get_kidPointer(idx)
 	node := TreeInsert(tree, tree.get_node(ptr), key, val)
 	number_node, split := SpliteNode3(node)
 	NkidInsert(tree, new, old, idx, split[:number_node]...)
