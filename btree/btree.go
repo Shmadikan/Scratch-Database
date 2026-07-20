@@ -397,10 +397,8 @@ func nodeDelete(tree *Btree, node BNode, kid_delete_index uint16, key BNode) BNo
 	if nmerge == 0 {
 		if updated_node.bnode_keys_count() > 0 {
 			NkidInsert(tree, newParentNode, node, kid_delete_index, updated_node)
-			return newParentNode
 		} else {
 			newParentNode.set_header(INTERNAL_NODE, 0)
-			return newParentNode
 		}
 	}
 	return newParentNode
