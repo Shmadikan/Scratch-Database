@@ -403,6 +403,7 @@ func nodeDelete(tree *Btree, node BNode, kid_delete_index uint16, key BNode) BNo
 			return newParentNode
 		}
 	}
+	return newParentNode
 
 }
 
