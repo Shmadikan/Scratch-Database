@@ -405,3 +405,11 @@ func nodeDelete(tree *Btree, node BNode, kid_delete_index uint16, key BNode) BNo
 
 }
 
+
+func (tree *Btree) delete(key []byte) {
+	if tree.root_number_page == 0 {
+		return
+	}
+	treeDelete(tree, tree.get_node(tree.root_number_page), key)
+}
+
