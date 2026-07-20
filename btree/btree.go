@@ -342,7 +342,15 @@ func mergeNode(new BNode, left BNode, right BNode) {
 }
 
 
-func treeDelete(tree *Btree, node BNode, key []byte) BNode {
+// Метод
+func nodeReplace2Kid(new BNode, old BNode, idx uint16, ptr uint64, key []byte) {
+	nodeAppendRange(new, old, 0, 0, idx)
+	nodeAppendKV(new, idx, ptr, key, nil)
+	nodeAppendRange(new, old, idx + 1, idx+1, old.bnode_keys_count() - idx+1)
+}
+
+
+func treeDelete(tree *Btree, node BNode, key BNode) BNode {
 	delete_index := LookupKeyLE(node, key)
 	
 	
@@ -353,13 +361,48 @@ func treeDelete(tree *Btree, node BNode, key []byte) BNode {
 			leafDelete(new, node, delete_index)
 			return new
 		}
+	} else {
+		return nodeDelete(tree, node, delete_index, key)
 	}
-	else {
-
-
-	}
-	return new
+	
 
 }
 
+
+func nodeDelete(tree *Btree, node BNode, kid_delete_index uint16, key BNode) BNode {
+	newParentNode := BNode(make([]byte, PAGE_SIZE))
+	kid_ptr,_ := node.get_kidPointer(kid_delete_index)
+	kid := tree.get_node(kid_ptr)
+	updated_node := treeDelete(tree, kid, key)
+	if len(updated_node) == 0 {
+		return BNode{}
+	}
+	tree.delete_node(kid_ptr)
+	
+	nmerge, sibling := shouldMerge(tree, node, kid_delete_index, updated_node)
+	if nmerge < 0 {
+		tree.delete_node(uint64(kid_delete_index) - 1)
+		merge := BNode(make([]byte, PAGE_SIZE))
+		mergeNode(merge, sibling, updated_node)
+		nodeReplace2Kid(newParentNode, node, kid_delete_index, tree.new(merge), merge.get_key(0))
+		return newParentNode
+	}
+	if nmerge > 0 {
+		tree.delete_node(uint64(kid_delete_index) + 1)
+		merge := BNode(make([]byte, PAGE_SIZE))
+		mergeNode(merge, sibling, updated_node)
+		nodeReplace2Kid(newParentNode, node, kid_delete_index, tree.new(merge), merge.get_key(0))
+		return newParentNode
+	}
+	if nmerge == 0 {
+		if updated_node.bnode_keys_count() > 0 {
+			NkidInsert(tree, newParentNode, node, kid_delete_index, updated_node)
+			return newParentNode
+		} else {
+			newParentNode.set_header(INTERNAL_NODE, 0)
+			return newParentNode
+		}
+	}
+
+}
 
