@@ -312,20 +312,22 @@ func leafDelete(new BNode, old BNode, idx uint16) {
 	nodeAppendRange(new, old, idx, idx+1, old.bnode_keys_count() - idx + 1)
 }
 
-func shouldMerge(tree *Btree, parentNode BNode, idx uint16, updated_kidNode BNode) (int, BNode) {
+
+// Метод принимает родительскую ноду, индекс на ребёнка и самого ребёнка по этому же индексу
+func shouldMerge(tree *Btree, parentNode BNode, current_updatedNode_idx uint16, updated_kidNode BNode) (int, BNode) {
 	if updated_kidNode.nbytes() >= PAGE_SIZE / 4 {
 		return 0, BNode{}
 	}
-	kid_ptr, _ := parentNode.get_kidPointer(idx-1)
+	kid_ptr, _ := parentNode.get_kidPointer(current_updatedNode_idx-1)
 	left := tree.get_node(kid_ptr)
-	if idx > 0{
+	if current_updatedNode_idx > 0 {
 		if left.nbytes() + updated_kidNode.nbytes() - HEADER <= PAGE_SIZE{
 			return -1, left
 		}
 	}
-	kid_ptr, _ = parentNode.get_kidPointer(idx+1)
+	kid_ptr, _ = parentNode.get_kidPointer(current_updatedNode_idx+1)
 	right := tree.get_node(kid_ptr)
-	if idx + 1 < parentNode.bnode_keys_count() {
+	if current_updatedNode_idx + 1 < parentNode.bnode_keys_count() {
 		if right.nbytes() + updated_kidNode.nbytes() - HEADER <= PAGE_SIZE {
 			return 1, right
 		}
@@ -334,5 +336,30 @@ func shouldMerge(tree *Btree, parentNode BNode, idx uint16, updated_kidNode BNod
 }
 
 
+func mergeNode(new BNode, left BNode, right BNode) {
+	nodeAppendRange(new, left, 0, 0, left.bnode_keys_count())
+	nodeAppendRange(new, right, left.bnode_keys_count() - 1, 0, right.bnode_keys_count())
+}
+
+
+func treeDelete(tree *Btree, node BNode, key []byte) BNode {
+	delete_index := LookupKeyLE(node, key)
+	
+	
+	new := BNode(make([]byte, PAGE_SIZE))
+	if node.bnode_type() == LEAF {
+		kvByte := node.get_key(delete_index)
+		if bytes.Compare(kvByte, key) == 0 {
+			leafDelete(new, node, delete_index)
+			return new
+		}
+	}
+	else {
+
+
+	}
+	return new
+
+}
 
 
