@@ -70,14 +70,14 @@ func offsetPos(node BNode, idx uint16) (uint16, error) {
 
 // декодировать значение n-го смещение
 func (node BNode) get_offset(idx uint16) (uint16, error) {
-	if (idx > node.bnode_keys_count()){
-		return 0, errors.New(IndexERROR)
-	}
-	if (idx == 0) {
+	if idx == 0 {
 		return 0, nil
 	}
+	if idx > node.bnode_keys_count() {
+		return 0, errors.New(IndexERROR)
+	}
 
-	offset,_ := offsetPos(node, idx)
+	offset, _ := offsetPos(node, idx)
 	return binary.LittleEndian.Uint16(node[offset:]), nil
 }
 
@@ -406,10 +406,15 @@ func nodeDelete(tree *Btree, node BNode, kid_delete_index uint16, key BNode) BNo
 }
 
 
-func (tree *Btree) delete(key []byte) {
+func (tree *Btree) delete(key []byte) bool {
 	if tree.root_number_page == 0 {
-		return
+		return false
 	}
+	tmp := tree.root_number_page
 	treeDelete(tree, tree.get_node(tree.root_number_page), key)
+	if tmp != tree.root_number_page {
+		return true
+	}
+	return false
 }
 
