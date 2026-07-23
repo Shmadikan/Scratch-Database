@@ -198,36 +198,20 @@ func SplitNode2(old BNode, left BNode, right BNode){
 	header_type := old.bnode_type()
 	header_key_size := old.bnode_keys_count()
 	
-	right_node_size := HEADER
-	index := uint16(0)
-	for ; index < header_key_size; index++ {
-		right_node_size += PTR_SIZE
-		child_node,_ := old.get_kidPointer(index)
-		
-		
-		offset, _ := old.get_offset(index)
-		right.set_offset(index, offset)
-		right_node_size += OFFSET_SIZE
-
-		key := old.get_key(index)
-		value := old.get_value(index)
-		key_size := len(key)
-		value_size := len(value)
-		right_node_size += key_size + value_size
-		if right_node_size > PAGE_SIZE {
-			break
-		}
-		
-		nodeAppendKV(right, index, child_node, key, value)
+	
+	right.set_header(header_type, 0)
+	index := uint16(old.bnode_keys_count() - 1)
+	right_node_size := uint16(0)
+	for ; index >= uint16(0) && old.nbytes() - right_node_size > 4096; index-- {
+		kvPos := old.keyValuePosition(index)
+		key_len := binary.LittleEndian.Uint16(old[kvPos:])
+		val_len := binary.LittleEndian.Uint16(old[kvPos+2:])
+		right_node_size += key_len + val_len + uint16(4)
 	}
 	right.set_header(header_type, index + 1)
-
-	for ; index < header_key_size; index ++ {
-		key := old.get_key(index)
-		value := old.get_value(index)
-		child_node, _ := old.get_kidPointer(index)
-		nodeAppendKV(left, index, child_node, key, value)
-	}
+	nodeAppendRange(right, old, 0, 0, index + 1)
+	left.set_header(header_type, header_key_size - (index + 1) )
+	nodeAppendRange(left, old, 0, index + 1, header_key_size - (index + 1) )
 }
 
 // Сплитим на 3 ноды
