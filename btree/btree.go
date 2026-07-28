@@ -200,18 +200,18 @@ func SplitNode2(old BNode, left BNode, right BNode){
 	
 	
 	right.set_header(header_type, 0)
-	index := uint16(old.bnode_keys_count() - 1)
-	right_node_size := uint16(0)
-	for ; index >= uint16(0) && old.nbytes() - right_node_size > 4096; index-- {
+	index := uint16(0)
+	node_oversize := uint16(0)
+	for ; index < old.bnode_keys_count() && old.nbytes() - node_oversize > 4096; index++ {
 		kvPos := old.keyValuePosition(index)
 		key_len := binary.LittleEndian.Uint16(old[kvPos:])
 		val_len := binary.LittleEndian.Uint16(old[kvPos+2:])
-		right_node_size += key_len + val_len + uint16(4)
+		node_oversize += key_len + val_len + uint16(4)
 	}
-	right.set_header(header_type, index + 1)
-	nodeAppendRange(right, old, 0, 0, index + 1)
-	left.set_header(header_type, header_key_size - (index + 1) )
-	nodeAppendRange(left, old, 0, index + 1, header_key_size - (index + 1) )
+	right.set_header(header_type, header_key_size - index)
+	nodeAppendRange(right, old, 0, index, header_key_size - index)
+	left.set_header(header_type, index)
+	nodeAppendRange(left, old, 0, 0, index)
 }
 
 // Сплитим на 3 ноды
