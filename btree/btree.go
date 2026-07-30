@@ -166,7 +166,8 @@ func nodeAppendRange(new BNode, old BNode, dstNew uint16, srcOld uint16, n uint1
 	for i := srcOld; i < n + srcOld; i++ {
 		key := old.get_key(i)
 		val := old.get_value(i)
-		nodeAppendKV(new, insertIndex, 0, key, val)
+		ptr, _ := old.get_kidPointer(i)
+		nodeAppendKV(new, insertIndex, ptr, key, val)
 		insertIndex++
 	}
 }
