@@ -185,10 +185,10 @@ func leafInsert(new BNode, old BNode, idx uint16, key []byte, value []byte) {
 // Вставка во внутренний узел
 func NkidInsert(tree *Btree, new BNode, old BNode, idx uint16, kids ...BNode) {
 	kid_count := uint16(len(kids))
-	new.set_header(1, old.bnode_keys_count() + kid_count)
+	new.set_header(INTERNAL_NODE, old.bnode_keys_count() + kid_count - 1)
 	nodeAppendRange(new, old, 0, 0, idx)
 	for i, kid := range kids {
-		nodeAppendKV(new, uint16(i)+idx, tree.new(kid), tree.get_node(0), tree.get_node(0))
+		nodeAppendKV(new, uint16(i)+idx, tree.new(kid), kid.get_key(0), nil)
 	}
 	nodeAppendRange(new, old, idx+kid_count, idx+kid_count-1, old.bnode_keys_count() - (idx + kid_count) - uint16(1))
 }
