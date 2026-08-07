@@ -2,9 +2,7 @@ package btree
 
 import (
 	"bytes"
-	"strings"
 	"unsafe"
-	"container/list"
 )
 
 type C struct {
@@ -40,6 +38,13 @@ func (c *C) insert(key string, val string){
 	// Дописать что валюха не может больше 3000 быть
 	c.tree.Insert([]byte(key), []byte(val))
 	c.ref[key] = val
+}
+
+
+func (c *C) delete(key string) bool {
+
+	return c.tree.delete([]byte(key))
+	
 }
 
 
