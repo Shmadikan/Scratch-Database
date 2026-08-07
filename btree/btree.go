@@ -1,9 +1,9 @@
 package btree
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
-	"bytes"
 )
 
 type BNode []byte
@@ -19,11 +19,10 @@ const INTERNAL_NODE = 1
 // Node представлена как последовательность байтов
 type Btree struct {
 	root_number_page uint64
-	get_node func(uint64) BNode
-	new func(BNode) uint64
-	delete_node func(uint64)
+	get_node         func(uint64) BNode
+	new              func(BNode) uint64
+	delete_node      func(uint64)
 }
-
 
 func (node BNode) bnode_type() uint16 {
 	return binary.LittleEndian.Uint16(node[0:2])
@@ -38,19 +37,18 @@ func (node BNode) set_header(type_node uint16, keys_len uint16) {
 	binary.LittleEndian.PutUint16(node[2:4], keys_len)
 }
 
-
 // Получить ребёнка ноды
 func (node BNode) get_kidPointer(idx uint16) (uint64, error) {
-	if (idx > node.bnode_keys_count()) {
+	if idx > node.bnode_keys_count() {
 		return 0, errors.New("Not match keys")
 	}
 
 	child_ptr := HEADER + idx*8
-	return binary.LittleEndian.Uint64(node[child_ptr:child_ptr+9]), nil
-} 
+	return binary.LittleEndian.Uint64(node[child_ptr : child_ptr+9]), nil
+}
 
 func (node BNode) set_pointer(idx uint16, ptr uint64) error {
-	if (idx > node.bnode_keys_count()) {
+	if idx > node.bnode_keys_count() {
 		return errors.New(IndexERROR)
 	}
 	child_ptr := HEADER + idx*8
@@ -58,15 +56,12 @@ func (node BNode) set_pointer(idx uint16, ptr uint64) error {
 	return nil
 }
 
-
-
 func offsetPos(node BNode, idx uint16) (uint16, error) {
 	if idx < 1 || idx > node.bnode_keys_count() {
 		return 0, errors.New(IndexERROR)
 	}
 	return HEADER + 8*node.bnode_keys_count() + 2*(idx-1), nil
 }
-
 
 // декодировать значение n-го смещение
 func (node BNode) get_offset(idx uint16) (uint16, error) {
@@ -83,7 +78,7 @@ func (node BNode) get_offset(idx uint16) (uint16, error) {
 
 // Установить значение для n-го смещения
 func (node BNode) set_offset(idx uint16, offset_value uint16) error {
-	if (idx > node.bnode_keys_count()) {
+	if idx > node.bnode_keys_count() {
 		return errors.New(IndexERROR)
 	}
 	offset, _ := offsetPos(node, idx)
@@ -91,17 +86,15 @@ func (node BNode) set_offset(idx uint16, offset_value uint16) error {
 	return nil
 }
 
-
-// Получить абсолютную позицию KV 
+// Получить абсолютную позицию KV
 func (node BNode) keyValuePosition(idx uint16) uint16 {
 	offset, error := node.get_offset(idx)
-	if (error != nil) {
+	if error != nil {
 		return 0
 	}
 	return HEADER + 8*node.bnode_keys_count() + 2*node.bnode_keys_count() + offset
 
 }
-
 
 // Получить ключ по смещению
 func (node BNode) get_key(idx uint16) []byte {
@@ -117,26 +110,22 @@ func (node BNode) get_value(idx uint16) []byte {
 	return node[offset+4+keylen:][:value_len]
 }
 
-
 // На позиции последнего оффсета размер ноды в байтах
 func (node BNode) nbytes() uint16 {
 	return node.keyValuePosition(node.bnode_keys_count())
 }
 
-
-
-
 // Меньше или равный ключ ищем
-func LookupKeyLE (node BNode, key []byte) uint16 {
+func LookupKeyLE(node BNode, key []byte) uint16 {
 	nkeys := node.bnode_keys_count()
-	
+
 	key_index := uint16(0)
 	for i := uint16(1); i < nkeys; i++ {
 		cmp := bytes.Compare(node.get_key(i), key)
-		if (cmp <= 0) {
+		if cmp <= 0 {
 			key_index = i
 		}
-		if (cmp >= 0) {
+		if cmp >= 0 {
 			break
 		}
 
@@ -144,25 +133,24 @@ func LookupKeyLE (node BNode, key []byte) uint16 {
 	return key_index
 }
 
-
 // Функция Insert в Node новый Key/value, предназначена как для листьев, так и для внутренних узлов
 func nodeAppendKV(node BNode, idx uint16, ptr uint64, key []byte, value []byte) {
 	node.set_pointer(idx, ptr)
-	
+
 	key_position := node.keyValuePosition(idx)
 	binary.LittleEndian.PutUint16(node[key_position:], uint16(len(key)))
-	binary.LittleEndian.PutUint16(node[key_position + 2:], uint16(len(value)))
+	binary.LittleEndian.PutUint16(node[key_position+2:], uint16(len(value)))
 
-	copy(node[key_position + 4 :], key)
-	copy(node[key_position + 4 + uint16(len(key)):], value)
+	copy(node[key_position+4:], key)
+	copy(node[key_position+4+uint16(len(key)):], value)
 
-	offset,_ := node.get_offset(idx)
-	node.set_offset(idx + 1, offset + 4 + uint16(len(key) + len(value)))
+	offset, _ := node.get_offset(idx)
+	node.set_offset(idx+1, offset+4+uint16(len(key)+len(value)))
 }
 
-// Вставка нескольких элементов со второй ноды (старая) в первую (новая). dstNew - куда начать вставку в новой ноде, srcOld - откуда брать элементы в старой. n - число элементов 
+// Вставка нескольких элементов со второй ноды (старая) в первую (новая). dstNew - куда начать вставку в новой ноде, srcOld - откуда брать элементы в старой. n - число элементов
 func nodeAppendRange(new BNode, old BNode, dstNew uint16, srcOld uint16, n uint16) {
-	insertIndex := dstNew 
+	insertIndex := dstNew
 	for i := srcOld; i < n + srcOld; i++ {
 		key := old.get_key(i)
 		val := old.get_value(i)
@@ -172,15 +160,13 @@ func nodeAppendRange(new BNode, old BNode, dstNew uint16, srcOld uint16, n uint1
 	}
 }
 
-
 // Copy on Write вставка
 func leafInsert(new BNode, old BNode, idx uint16, key []byte, value []byte) {
-	new.set_header(2, old.bnode_keys_count() + 1)
+	new.set_header(2, old.bnode_keys_count()+1)
 	nodeAppendRange(new, old, 0, 0, idx)
 	nodeAppendKV(new, idx, 0, key, value)
-	nodeAppendRange(new, old, idx+1, idx, old.bnode_keys_count() - idx)
+	nodeAppendRange(new, old, idx+1, idx, old.bnode_keys_count()-idx)
 }
-
 
 // Вставка во внутренний узел
 func NkidInsert(tree *Btree, new BNode, old BNode, idx uint16, kids ...BNode) {
@@ -194,23 +180,22 @@ func NkidInsert(tree *Btree, new BNode, old BNode, idx uint16, kids ...BNode) {
 }
 
 // Деление ноды на 2, вторая нода всегда вмещается в размер страницы
-func SplitNode2(old BNode, left BNode, right BNode){
-	
+func SplitNode2(old BNode, left BNode, right BNode) {
+
 	header_type := old.bnode_type()
 	header_key_size := old.bnode_keys_count()
-	
-	
+
 	right.set_header(header_type, 0)
 	index := uint16(0)
 	node_oversize := uint16(0)
-	for ; index < old.bnode_keys_count() && old.nbytes() - node_oversize > 4096; index++ {
+	for ; index < old.bnode_keys_count() && old.nbytes()-node_oversize > 4096; index++ {
 		kvPos := old.keyValuePosition(index)
 		key_len := binary.LittleEndian.Uint16(old[kvPos:])
 		val_len := binary.LittleEndian.Uint16(old[kvPos+2:])
 		node_oversize += key_len + val_len + uint16(4)
 	}
-	right.set_header(header_type, header_key_size - index)
-	nodeAppendRange(right, old, 0, index, header_key_size - index)
+	right.set_header(header_type, header_key_size-index)
+	nodeAppendRange(right, old, 0, index, header_key_size-index)
 	left.set_header(header_type, index)
 	nodeAppendRange(left, old, 0, 0, index)
 }
@@ -390,7 +375,6 @@ func nodeDelete(tree *Btree, node BNode, kid_delete_index uint16, key BNode) BNo
 
 }
 
-
 func (tree *Btree) delete(key []byte) bool {
 	if tree.root_number_page == 0 {
 		return false
@@ -402,4 +386,3 @@ func (tree *Btree) delete(key []byte) bool {
 	}
 	return false
 }
-
