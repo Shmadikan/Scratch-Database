@@ -263,8 +263,8 @@ func (tree *Btree) Insert(key []byte, val []byte){
 	if nsplit > 1 {
 		root := BNode(make([]byte, PAGE_SIZE))
 		root.set_header(INTERNAL_NODE, nsplit)
-		for i, node := range(split[:nsplit]) {
-			ptr, key := tree.new(node), node.get_key(0)
+		for i, child_node := range split[:nsplit] {
+			ptr, key := tree.new(child_node), child_node.get_key(0)
 			nodeAppendKV(root, uint16(i), ptr, key, nil)
 		}
 		tree.root_number_page = tree.new(root)
