@@ -374,10 +374,13 @@ func (tree *Btree) delete(key []byte) bool {
 	if tree.root_number_page == 0 {
 		return false
 	}
-	tmp := tree.root_number_page
-	treeDelete(tree, tree.get_node(tree.root_number_page), key)
-	if tmp != tree.root_number_page {
-		return true
+	tmp := tree.get_node(tree.root_number_page)
+	new_root := treeDelete(tree, tree.get_node(tree.root_number_page), key)
+	if bytes.Equal(tmp, new_root) {
+		return false
 	}
-	return false
+	tree.delete_node(tree.root_number_page)
+	page := tree.new(new_root)
+	tree.root_number_page = page
+	return true
 }
