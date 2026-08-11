@@ -284,16 +284,18 @@ func shouldMerge(tree *Btree, parentNode BNode, current_updatedNode_idx uint16, 
 	if updated_kidNode.nbytes() >= PAGE_SIZE/4 {
 		return 0, BNode{}
 	}
-	kid_ptr, _ := parentNode.get_kidPointer(current_updatedNode_idx - 1)
-	left := tree.get_node(kid_ptr)
+
 	if current_updatedNode_idx > 0 {
+		kid_ptr, _ := parentNode.get_kidPointer(current_updatedNode_idx - 1)
+		left := tree.get_node(kid_ptr)
 		if left.nbytes()+updated_kidNode.nbytes()-HEADER <= PAGE_SIZE {
 			return -1, left
 		}
 	}
-	kid_ptr, _ = parentNode.get_kidPointer(current_updatedNode_idx + 1)
-	right := tree.get_node(kid_ptr)
+
 	if current_updatedNode_idx+1 < parentNode.bnode_keys_count() {
+		kid_ptr, _ := parentNode.get_kidPointer(current_updatedNode_idx + 1)
+		right := tree.get_node(kid_ptr)
 		if right.nbytes()+updated_kidNode.nbytes()-HEADER <= PAGE_SIZE {
 			return 1, right
 		}
