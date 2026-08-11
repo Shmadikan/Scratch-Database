@@ -323,7 +323,7 @@ func treeDelete(tree *Btree, node BNode, key []byte) BNode {
 	new := BNode(make([]byte, PAGE_SIZE))
 	if node.bnode_type() == LEAF {
 		kvByte := node.get_key(delete_index)
-		if bytes.Compare(kvByte, key) == 0 {
+		if bytes.Equal(kvByte, key) {
 			leafDelete(new, node, delete_index)
 			return new
 		}
