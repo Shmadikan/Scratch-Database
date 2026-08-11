@@ -224,7 +224,7 @@ func NodeInsert(tree *Btree, new BNode, old BNode, idx uint16, key []byte, val [
 	ptr, _ := old.get_kidPointer(idx)
 	node := TreeInsert(tree, tree.get_node(ptr), key, val)
 	number_node, split := SpliteNode3(node)
-	// Сделать освобождение памяти
+	tree.delete_node(ptr)
 	NkidInsert(tree, new, old, idx, split[:number_node]...)
 }
 
