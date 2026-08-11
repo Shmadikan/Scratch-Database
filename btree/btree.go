@@ -304,15 +304,17 @@ func shouldMerge(tree *Btree, parentNode BNode, current_updatedNode_idx uint16, 
 }
 
 func mergeNode(new BNode, left BNode, right BNode) {
+	new.set_header(left.bnode_type(), left.bnode_keys_count() + right.bnode_keys_count())
 	nodeAppendRange(new, left, 0, 0, left.bnode_keys_count())
 	nodeAppendRange(new, right, left.bnode_keys_count()-1, 0, right.bnode_keys_count())
 }
 
 // Метод
 func nodeReplace2Kid(new BNode, old BNode, idx uint16, ptr uint64, key []byte) {
+	new.set_header(old.bnode_type(), old.bnode_keys_count() - 1)
 	nodeAppendRange(new, old, 0, 0, idx)
 	nodeAppendKV(new, idx, ptr, key, nil)
-	nodeAppendRange(new, old, idx+1, idx+1, old.bnode_keys_count()-idx+1)
+	nodeAppendRange(new, old, idx+1, idx+1, old.bnode_keys_count()- (idx+1))
 }
 
 func treeDelete(tree *Btree, node BNode, key []byte) BNode {
