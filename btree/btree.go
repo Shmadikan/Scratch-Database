@@ -355,7 +355,7 @@ func nodeDelete(tree *Btree, node BNode, kid_delete_index uint16, key BNode) BNo
 	if nmerge > 0 {
 		tree.delete_node(uint64(kid_delete_index) + 1)
 		merge := BNode(make([]byte, PAGE_SIZE))
-		mergeNode(merge, sibling, updated_node)
+		mergeNode(merge, updated_node, sibling)
 		nodeReplace2Kid(newParentNode, node, kid_delete_index, tree.new(merge), merge.get_key(0))
 		return newParentNode
 	}
