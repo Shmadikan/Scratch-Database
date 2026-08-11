@@ -274,8 +274,9 @@ func (tree *Btree) Insert(key []byte, val []byte) {
 }
 
 func leafDelete(new BNode, old BNode, idx uint16) {
-	nodeAppendRange(new, old, 0, 0, idx-1)
-	nodeAppendRange(new, old, idx, idx+1, old.bnode_keys_count()-idx+1)
+	new.set_header(LEAF, old.bnode_keys_count()-1)
+	nodeAppendRange(new, old, 0, 0, idx)
+	nodeAppendRange(new, old, idx, idx+1, old.bnode_keys_count()-(idx+1))
 }
 
 // Метод принимает родительскую ноду, индекс на ребёнка и самого ребёнка по этому же индексу
