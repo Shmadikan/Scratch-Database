@@ -160,25 +160,6 @@ func nodeAppendRange(new BNode, old BNode, dstNew uint16, srcOld uint16, n uint1
 	}
 }
 
-// Copy on Write вставка
-func leafInsert(new BNode, old BNode, idx uint16, key []byte, value []byte) {
-	new.set_header(2, old.bnode_keys_count()+1)
-	nodeAppendRange(new, old, 0, 0, idx)
-	nodeAppendKV(new, idx, 0, key, value)
-	nodeAppendRange(new, old, idx+1, idx, old.bnode_keys_count()-idx)
-}
-
-// Вставка во внутренний узел
-func NkidInsert(tree *Btree, new BNode, old BNode, idx uint16, kids ...BNode) {
-	kid_count := uint16(len(kids))
-	new.set_header(INTERNAL_NODE, old.bnode_keys_count() + kid_count - 1)
-	nodeAppendRange(new, old, 0, 0, idx)
-	for i, kid := range kids {
-		nodeAppendKV(new, uint16(i)+idx, tree.new(kid), kid.get_key(0), nil)
-	}
-	nodeAppendRange(new, old, idx+kid_count, idx+kid_count-1, old.bnode_keys_count() - (idx + kid_count) - uint16(1))
-}
-
 // Деление ноды на 2, вторая нода всегда вмещается в размер страницы
 func SplitNode2(old BNode, left BNode, right BNode) {
 
@@ -218,6 +199,25 @@ func SpliteNode3(old BNode) (uint16, [3]BNode) {
 	SplitNode2(left, left_end, middle)
 	return 3, [3]BNode{right, middle, left_end}
 
+}
+
+// Copy on Write вставка
+func leafInsert(new BNode, old BNode, idx uint16, key []byte, value []byte) {
+	new.set_header(2, old.bnode_keys_count()+1)
+	nodeAppendRange(new, old, 0, 0, idx)
+	nodeAppendKV(new, idx, 0, key, value)
+	nodeAppendRange(new, old, idx+1, idx, old.bnode_keys_count()-idx)
+}
+
+// Вставка во внутренний узел
+func NkidInsert(tree *Btree, new BNode, old BNode, idx uint16, kids ...BNode) {
+	kid_count := uint16(len(kids))
+	new.set_header(INTERNAL_NODE, old.bnode_keys_count()+kid_count-1)
+	nodeAppendRange(new, old, 0, 0, idx)
+	for i, kid := range kids {
+		nodeAppendKV(new, uint16(i)+idx, tree.new(kid), kid.get_key(0), nil)
+	}
+	nodeAppendRange(new, old, idx+kid_count, idx+1, old.bnode_keys_count()-(idx+1))
 }
 
 func NodeInsert(tree *Btree, new BNode, old BNode, idx uint16, key []byte, val []byte) {
