@@ -375,9 +375,8 @@ func (tree *Btree) delete(key []byte) bool {
 	if tree.root_number_page == 0 {
 		return false
 	}
-	tmp := tree.get_node(tree.root_number_page)
 	new_root := treeDelete(tree, tree.get_node(tree.root_number_page), key)
-	if bytes.Equal(tmp, new_root) {
+	if len(new_root) == 0 {
 		return false
 	}
 	tree.delete_node(tree.root_number_page)
