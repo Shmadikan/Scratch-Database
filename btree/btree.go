@@ -306,7 +306,7 @@ func shouldMerge(tree *Btree, parentNode BNode, current_updatedNode_idx uint16, 
 func mergeNode(new BNode, left BNode, right BNode) {
 	new.set_header(left.bnode_type(), left.bnode_keys_count() + right.bnode_keys_count())
 	nodeAppendRange(new, left, 0, 0, left.bnode_keys_count())
-	nodeAppendRange(new, right, left.bnode_keys_count()-1, 0, right.bnode_keys_count())
+	nodeAppendRange(new, right, left.bnode_keys_count(), 0, right.bnode_keys_count())
 }
 
 // Метод
