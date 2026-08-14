@@ -9,12 +9,13 @@ type C struct {
 	tree Btree
 	ref map[string]string
 	pages map[uint64]BNode
+	root BNode
 }
 
 
 func newC() *C {
 	pages := map[uint64]BNode{}
-	return &C{
+	struct_tree := C{
 		tree: Btree{
 			get_node: func(ptr uint64) BNode {
 				node, _ := pages[ptr]
@@ -32,18 +33,23 @@ func newC() *C {
 		ref: make(map[string]string),
 		pages: pages,
 	}
+	struct_tree.root = struct_tree.tree.get_node(struct_tree.tree.root_number_page)
+	return &struct_tree
 }
 
 func (c *C) insert(key string, val string){
 	// Дописать что валюха не может больше 3000 быть
 	c.tree.Insert([]byte(key), []byte(val))
 	c.ref[key] = val
+	c.root = c.tree.get_node(c.tree.root_number_page)
 }
 
 
 func (c *C) delete(key string) bool {
 
-	return c.tree.delete([]byte(key))
+	val := c.tree.delete([]byte(key))
+	c.root = c.tree.get_node(c.tree.root_number_page)
+	return val
 	
 }
 
