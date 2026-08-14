@@ -151,7 +151,7 @@ func nodeAppendKV(node BNode, idx uint16, ptr uint64, key []byte, value []byte) 
 // Вставка нескольких элементов со второй ноды (старая) в первую (новая). dstNew - куда начать вставку в новой ноде, srcOld - откуда брать элементы в старой. n - число элементов
 func nodeAppendRange(new BNode, old BNode, dstNew uint16, srcOld uint16, n uint16) {
 	insertIndex := dstNew
-	for i := srcOld; i < n + srcOld; i++ {
+	for i := srcOld; i < n+srcOld; i++ {
 		key := old.get_key(i)
 		val := old.get_value(i)
 		ptr, _ := old.get_kidPointer(i)
