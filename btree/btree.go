@@ -314,7 +314,7 @@ func nodeReplace2Kid(new BNode, old BNode, idx uint16, ptr uint64, key []byte) {
 	new.set_header(old.bnode_type(), old.bnode_keys_count() - 1)
 	nodeAppendRange(new, old, 0, 0, idx)
 	nodeAppendKV(new, idx, ptr, key, nil)
-	nodeAppendRange(new, old, idx+1, idx+1, old.bnode_keys_count()- (idx+1))
+	nodeAppendRange(new, old, idx+1, idx+2, old.bnode_keys_count()- (idx+2))
 }
 
 func treeDelete(tree *Btree, node BNode, key []byte) BNode {
