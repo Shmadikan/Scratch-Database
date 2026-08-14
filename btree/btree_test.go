@@ -74,7 +74,7 @@ func TestDelete(t *testing.T) {
 
 	assert.Equal(t, structure.get("10"), "huina", "Not correct")
 	assert.Equal(t, structure.delete("10"), true, "Not correct")
-	assert.Equal(t, structure.root.bnode_keys_count(), uint16(1), "Not correct")
+	assert.Equal(t, structure.root.bnode_type(), uint16(LEAF), "Not correct")
 }
 
 // Тесты операций get, insert и delete.

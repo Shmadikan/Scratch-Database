@@ -379,8 +379,18 @@ func (tree *Btree) delete(key []byte) bool {
 	if len(new_root) == 0 {
 		return false
 	}
+	
 	tree.delete_node(tree.root_number_page)
 	page := tree.new(new_root)
 	tree.root_number_page = page
+
+	if (new_root.bnode_keys_count() == 1) {
+		kid, _ := new_root.get_kidPointer(0)
+		if (tree.get_node(kid).bnode_keys_count() == 1) {
+			new_root.set_header(LEAF, 1)
+			nodeAppendKV(new_root, 0, 0, nil, nil)
+			tree.delete_node(kid)
+		}
+	}
 	return true
 }
