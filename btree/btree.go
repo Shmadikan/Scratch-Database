@@ -320,17 +320,18 @@ func nodeReplace2Kid(new BNode, old BNode, idx uint16, ptr uint64, key []byte) {
 func treeDelete(tree *Btree, node BNode, key []byte) BNode {
 	delete_index := LookupKeyLE(node, key)
 
-	new := BNode(make([]byte, PAGE_SIZE))
+	
 	if node.bnode_type() == LEAF {
 		kvByte := node.get_key(delete_index)
 		if bytes.Equal(kvByte, key) {
+			new := BNode(make([]byte, PAGE_SIZE))
 			leafDelete(new, node, delete_index)
 			return new
 		}
 	} else {
 		return nodeDelete(tree, node, delete_index, key)
 	}
-	return new
+	return BNode{}
 
 }
 
