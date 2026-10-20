@@ -1,4 +1,4 @@
-module db
+module github.com/Shmadikan/Scratch-Database
 
 go 1.27.0
 
