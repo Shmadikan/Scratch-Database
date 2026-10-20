@@ -6,7 +6,7 @@ import (
 )
 
 type Store struct {
-	path           string
+	Path           string
 	fileDescriptor int
 	tree           btree.Btree
 }
