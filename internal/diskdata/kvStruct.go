@@ -26,7 +26,7 @@ func syncFile(s *Store) error {
 }
 
 func (s *Store) Open() error {
-	fd, err := createFileSync(s.path)
+	fd, err := createFileSync(s.Path)
 	if err != nil {
 		return err
 	}
