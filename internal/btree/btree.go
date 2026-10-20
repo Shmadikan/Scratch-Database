@@ -19,10 +19,10 @@ var errIndexOutOfRange = errors.New("index out of range")
 
 // Node представлена как последовательность байтов
 type Btree struct {
-	rootPageNumber uint64
-	getNode        func(uint64) BNode
-	newNode        func(BNode) uint64
-	deleteNode     func(uint64)
+	RootPageNumber uint64
+	GetNode        func(uint64) BNode
+	NewNode        func(BNode) uint64
+	DeleteNode     func(uint64)
 }
 
 func (node BNode) nodeType() uint16 {
@@ -199,80 +199,80 @@ func splitNode3(old BNode) (uint16, [3]BNode) {
 }
 
 // Copy on Write вставка
-func leafInsert(newNode BNode, old BNode, idx uint16, key []byte, value []byte) {
-	newNode.setHeader(leaf, old.keyCount()+1)
-	nodeAppendRange(newNode, old, 0, 0, idx)
-	nodeAppendKV(newNode, idx, 0, key, value)
-	nodeAppendRange(newNode, old, idx+1, idx, old.keyCount()-idx)
+func leafInsert(NewNode BNode, old BNode, idx uint16, key []byte, value []byte) {
+	NewNode.setHeader(leaf, old.keyCount()+1)
+	nodeAppendRange(NewNode, old, 0, 0, idx)
+	nodeAppendKV(NewNode, idx, 0, key, value)
+	nodeAppendRange(NewNode, old, idx+1, idx, old.keyCount()-idx)
 }
 
 // Вставка во внутренний узел
-func insertChildren(tree *Btree, newNode BNode, old BNode, idx uint16, children ...BNode) {
+func insertChildren(tree *Btree, NewNode BNode, old BNode, idx uint16, children ...BNode) {
 	childCount := uint16(len(children))
-	newNode.setHeader(internalNode, old.keyCount()+childCount-1)
-	nodeAppendRange(newNode, old, 0, 0, idx)
+	NewNode.setHeader(internalNode, old.keyCount()+childCount-1)
+	nodeAppendRange(NewNode, old, 0, 0, idx)
 	for i, child := range children {
-		nodeAppendKV(newNode, uint16(i)+idx, tree.newNode(child), child.getKey(0), nil)
+		nodeAppendKV(NewNode, uint16(i)+idx, tree.NewNode(child), child.getKey(0), nil)
 	}
-	nodeAppendRange(newNode, old, idx+childCount, idx+1, old.keyCount()-(idx+1))
+	nodeAppendRange(NewNode, old, idx+childCount, idx+1, old.keyCount()-(idx+1))
 }
 
-func nodeInsert(tree *Btree, newNode BNode, old BNode, idx uint16, key []byte, val []byte) {
+func nodeInsert(tree *Btree, NewNode BNode, old BNode, idx uint16, key []byte, val []byte) {
 	ptr, _ := old.childPointer(idx)
-	node := treeInsert(tree, tree.getNode(ptr), key, val)
+	node := treeInsert(tree, tree.GetNode(ptr), key, val)
 	nodeCount, split := splitNode3(node)
-	tree.deleteNode(ptr)
-	insertChildren(tree, newNode, old, idx, split[:nodeCount]...)
+	tree.DeleteNode(ptr)
+	insertChildren(tree, NewNode, old, idx, split[:nodeCount]...)
 }
 
 // Метод для добавления нового элемента в B-tree
 func treeInsert(tree *Btree, node BNode, key []byte, val []byte) BNode {
-	newNode := BNode(make([]byte, 2*pageSize))
+	NewNode := BNode(make([]byte, 2*pageSize))
 
 	insertIdx := lookupKeyLE(node, key)
 	if node.nodeType() == leaf {
-		leafInsert(newNode, node, insertIdx+1, key, val)
+		leafInsert(NewNode, node, insertIdx+1, key, val)
 		// Сделать при равенстве значений
 	} else {
-		nodeInsert(tree, newNode, node, insertIdx, key, val)
+		nodeInsert(tree, NewNode, node, insertIdx, key, val)
 	}
-	return newNode
+	return NewNode
 }
 
 // Высокуровнеый insert
 func (tree *Btree) Insert(key []byte, val []byte) {
-	if tree.rootPageNumber == 0 {
+	if tree.RootPageNumber == 0 {
 		root := BNode(make([]byte, pageSize))
 		root.setHeader(leaf, 2)
 		nodeAppendKV(root, 0, 0, nil, nil) // Сторожевое значение, чтобы всегда что то находилось, акутально только в начале
 		nodeAppendKV(root, 1, 0, key, val)
-		tree.rootPageNumber = tree.newNode(root)
+		tree.RootPageNumber = tree.NewNode(root)
 		return
 	}
 
-	node := treeInsert(tree, tree.getNode(tree.rootPageNumber), key, val)
+	node := treeInsert(tree, tree.GetNode(tree.RootPageNumber), key, val)
 
 	splitCount, split := splitNode3(node)
-	tree.deleteNode(tree.rootPageNumber)
+	tree.DeleteNode(tree.RootPageNumber)
 	if splitCount > 1 {
 		root := BNode(make([]byte, pageSize))
 		root.setHeader(internalNode, splitCount)
 		for i, childNode := range split[:splitCount] {
-			ptr, key := tree.newNode(childNode), childNode.getKey(0)
+			ptr, key := tree.NewNode(childNode), childNode.getKey(0)
 			nodeAppendKV(root, uint16(i), ptr, key, nil)
 		}
-		tree.rootPageNumber = tree.newNode(root)
+		tree.RootPageNumber = tree.NewNode(root)
 		// [1,1000]
 		// [1,...,1000],[1000, 10000]
 	} else {
-		tree.rootPageNumber = tree.newNode(split[0])
+		tree.RootPageNumber = tree.NewNode(split[0])
 	}
 }
 
-func leafDelete(newNode BNode, old BNode, idx uint16) {
-	newNode.setHeader(leaf, old.keyCount()-1)
-	nodeAppendRange(newNode, old, 0, 0, idx)
-	nodeAppendRange(newNode, old, idx, idx+1, old.keyCount()-(idx+1))
+func leafDelete(NewNode BNode, old BNode, idx uint16) {
+	NewNode.setHeader(leaf, old.keyCount()-1)
+	nodeAppendRange(NewNode, old, 0, 0, idx)
+	nodeAppendRange(NewNode, old, idx, idx+1, old.keyCount()-(idx+1))
 }
 
 // Метод принимает родительскую ноду, индекс на ребёнка и самого ребёнка по этому же индексу
@@ -283,7 +283,7 @@ func shouldMerge(tree *Btree, parentNode BNode, updatedIdx uint16, updatedChild 
 
 	if updatedIdx > 0 {
 		childPtr, _ := parentNode.childPointer(updatedIdx - 1)
-		left := tree.getNode(childPtr)
+		left := tree.GetNode(childPtr)
 		if left.nbytes()+updatedChild.nbytes()-headerSize <= pageSize {
 			return -1, left
 		}
@@ -291,7 +291,7 @@ func shouldMerge(tree *Btree, parentNode BNode, updatedIdx uint16, updatedChild 
 
 	if updatedIdx+1 < parentNode.keyCount() {
 		childPtr, _ := parentNode.childPointer(updatedIdx + 1)
-		right := tree.getNode(childPtr)
+		right := tree.GetNode(childPtr)
 		if right.nbytes()+updatedChild.nbytes()-headerSize <= pageSize {
 			return 1, right
 		}
@@ -299,18 +299,18 @@ func shouldMerge(tree *Btree, parentNode BNode, updatedIdx uint16, updatedChild 
 	return 0, BNode{}
 }
 
-func mergeNode(newNode BNode, left BNode, right BNode) {
-	newNode.setHeader(left.nodeType(), left.keyCount()+right.keyCount())
-	nodeAppendRange(newNode, left, 0, 0, left.keyCount())
-	nodeAppendRange(newNode, right, left.keyCount(), 0, right.keyCount())
+func mergeNode(NewNode BNode, left BNode, right BNode) {
+	NewNode.setHeader(left.nodeType(), left.keyCount()+right.keyCount())
+	nodeAppendRange(NewNode, left, 0, 0, left.keyCount())
+	nodeAppendRange(NewNode, right, left.keyCount(), 0, right.keyCount())
 }
 
 // Метод
-func replaceChild(newNode BNode, old BNode, idx uint16, ptr uint64, key []byte) {
-	newNode.setHeader(old.nodeType(), old.keyCount()-1)
-	nodeAppendRange(newNode, old, 0, 0, idx)
-	nodeAppendKV(newNode, idx, ptr, key, nil)
-	nodeAppendRange(newNode, old, idx+1, idx+2, old.keyCount()-(idx+2))
+func replaceChild(NewNode BNode, old BNode, idx uint16, ptr uint64, key []byte) {
+	NewNode.setHeader(old.nodeType(), old.keyCount()-1)
+	nodeAppendRange(NewNode, old, 0, 0, idx)
+	nodeAppendKV(NewNode, idx, ptr, key, nil)
+	nodeAppendRange(NewNode, old, idx+1, idx+2, old.keyCount()-(idx+2))
 }
 
 func treeDelete(tree *Btree, node BNode, key []byte) BNode {
@@ -319,9 +319,9 @@ func treeDelete(tree *Btree, node BNode, key []byte) BNode {
 	if node.nodeType() == leaf {
 		keyBytes := node.getKey(deleteIndex)
 		if bytes.Equal(keyBytes, key) {
-			newNode := BNode(make([]byte, pageSize))
-			leafDelete(newNode, node, deleteIndex)
-			return newNode
+			NewNode := BNode(make([]byte, pageSize))
+			leafDelete(NewNode, node, deleteIndex)
+			return NewNode
 		}
 	} else {
 		return nodeDelete(tree, node, deleteIndex, key)
@@ -332,26 +332,26 @@ func treeDelete(tree *Btree, node BNode, key []byte) BNode {
 func nodeDelete(tree *Btree, node BNode, childIndex uint16, key []byte) BNode {
 	newParentNode := BNode(make([]byte, pageSize))
 	childPtr, _ := node.childPointer(childIndex)
-	child := tree.getNode(childPtr)
+	child := tree.GetNode(childPtr)
 	updatedNode := treeDelete(tree, child, key)
 	if len(updatedNode) == 0 {
 		return BNode{}
 	}
-	tree.deleteNode(childPtr)
+	tree.DeleteNode(childPtr)
 
 	mergeDir, sibling := shouldMerge(tree, node, childIndex, updatedNode)
 	if mergeDir < 0 {
-		tree.deleteNode(uint64(childIndex) - 1)
+		tree.DeleteNode(uint64(childIndex) - 1)
 		merge := BNode(make([]byte, pageSize))
 		mergeNode(merge, sibling, updatedNode)
-		replaceChild(newParentNode, node, childIndex-1, tree.newNode(merge), merge.getKey(0))
+		replaceChild(newParentNode, node, childIndex-1, tree.NewNode(merge), merge.getKey(0))
 		return newParentNode
 	}
 	if mergeDir > 0 {
-		tree.deleteNode(uint64(childIndex) + 1)
+		tree.DeleteNode(uint64(childIndex) + 1)
 		merge := BNode(make([]byte, pageSize))
 		mergeNode(merge, updatedNode, sibling)
-		replaceChild(newParentNode, node, childIndex, tree.newNode(merge), merge.getKey(0))
+		replaceChild(newParentNode, node, childIndex, tree.NewNode(merge), merge.getKey(0))
 		return newParentNode
 	}
 	if mergeDir == 0 {
@@ -365,37 +365,37 @@ func nodeDelete(tree *Btree, node BNode, childIndex uint16, key []byte) BNode {
 }
 
 func (tree *Btree) Delete(key []byte) bool {
-	if tree.rootPageNumber == 0 {
+	if tree.RootPageNumber == 0 {
 		return false
 	}
-	newRoot := treeDelete(tree, tree.getNode(tree.rootPageNumber), key)
+	newRoot := treeDelete(tree, tree.GetNode(tree.RootPageNumber), key)
 	if len(newRoot) == 0 {
 		return false
 	}
 
-	tree.deleteNode(tree.rootPageNumber)
-	page := tree.newNode(newRoot)
-	tree.rootPageNumber = page
+	tree.DeleteNode(tree.RootPageNumber)
+	page := tree.NewNode(newRoot)
+	tree.RootPageNumber = page
 
 	if newRoot.keyCount() == 1 {
 		child, _ := newRoot.childPointer(0)
-		if tree.getNode(child).keyCount() == 1 {
+		if tree.GetNode(child).keyCount() == 1 {
 			newRoot.setHeader(leaf, 1)
 			nodeAppendKV(newRoot, 0, 0, nil, nil)
-			tree.deleteNode(child)
+			tree.DeleteNode(child)
 		}
 	}
 	return true
 }
 
 func (tree *Btree) Get(key []byte) (value []byte, found bool) {
-	root := tree.rootPageNumber
-	node := tree.getNode(root)
+	root := tree.RootPageNumber
+	node := tree.GetNode(root)
 	index := lookupKeyLE(node, []byte(key))
 
 	for node.nodeType() != leaf {
 		ptr, _ := node.childPointer(index)
-		childNode := tree.getNode(ptr)
+		childNode := tree.GetNode(ptr)
 		node = childNode
 		index = lookupKeyLE(node, []byte(key))
 	}
