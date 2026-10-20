@@ -25,6 +25,38 @@ func writePages(s *Store) error {
 	return nil
 }
 
+
+func (s *Store) pageRead(ptr uint64) []byte {
+	start := uint64(0)
+	for _, chunk := range s.mmap.chunks {
+		end := start + uint64(len(chunk) / b.PAGESIZE)
+		if ptr <= end {
+			offset := b.PAGESIZE * (ptr - start)
+			return chunk[offset: offset + b.PAGESIZE]
+		}
+		start = end
+	}
+	panic("Doesn't have page with this ptr")
+}
+
+
+func extendMmap(s *Store, size int) error {
+	if s.mmap.total > size {
+		return nil
+	}
+	allocation := max(s.mmap.total, 8 << 20)
+	for s.mmap.total + allocation < size {
+		allocation *= 2
+	}
+	mmap, err := syscall.Mmap(s.fileDescriptor, int64(s.mmap.total), allocation, syscall.PROT_READ, syscall.MAP_SHARED)
+	if err != nil {
+		return fmt.Errorf("mmap error: %b", mmap)
+	}
+	s.mmap.chunks = append(s.mmap.chunks, mmap)
+	return nil
+}
+
+
 func syncFile(s *Store) error {
 	if err := writePages(s); err != nil {
 		return err
