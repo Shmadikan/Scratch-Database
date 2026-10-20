@@ -10,7 +10,15 @@ import (
 type Store struct {
 	Path           string
 	fileDescriptor int
-	tree           btree.Btree
+	tree           b.Btree
+	mmap struct { // Множество отображение на файл (отображение могут отображаться на разные участки файла)
+		total int // Общий размер всех mmap-ов
+		chunks [][]byte
+	}
+	page struct { // 
+		flushed uint64
+		temp [][]byte
+	}
 }
 
 func writePages(s *Store) error {
