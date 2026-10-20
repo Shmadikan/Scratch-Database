@@ -3,6 +3,8 @@ package diskdata
 import (
 	"github.com/Shmadikan/Scratch-Database/internal/btree"
 	"syscall"
+
+	b "github.com/Shmadikan/Scratch-Database/internal/btree"
 )
 
 type Store struct {
