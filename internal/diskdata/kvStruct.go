@@ -12,13 +12,13 @@ type Store struct {
 	Path           string
 	fileDescriptor int
 	tree           b.Btree
-	mmap struct { // Множество отображение на файл (отображение могут отображаться на разные участки файла)
-		total int // Общий размер всех mmap-ов
+	mmap           struct { // Множество отображение на файл (отображение могут отображаться на разные участки файла)
+		total  int // Общий размер всех mmap-ов
 		chunks [][]byte
 	}
 	page struct { // 
 		flushed uint64
-		temp [][]byte
+		temp    [][]byte
 	}
 }
 
@@ -33,7 +33,7 @@ func (s *Store) pageRead(ptr uint64) []byte {
 		end := start + uint64(len(chunk) / b.PAGESIZE)
 		if ptr <= end {
 			offset := b.PAGESIZE * (ptr - start)
-			return chunk[offset: offset + b.PAGESIZE]
+			return chunk[offset : offset+b.PAGESIZE]
 		}
 		start = end
 	}
@@ -45,7 +45,7 @@ func extendMmap(s *Store, size int) error {
 	if s.mmap.total > size {
 		return nil
 	}
-	allocation := max(s.mmap.total, 8 << 20)
+	allocation := max(s.mmap.total, 60<<20)
 	for s.mmap.total + allocation < size {
 		allocation *= 2
 	}
