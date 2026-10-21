@@ -8,6 +8,9 @@ import (
 	b "github.com/Shmadikan/Scratch-Database/internal/btree"	
 )
 
+const DB_SIG = "Exactly16BytesIn"
+
+
 type Store struct {
 	Path           string
 	fileDescriptor int
@@ -20,10 +23,7 @@ type Store struct {
 		flushed uint64
 		temp    [][]byte
 	}
-}
-
-func writePages(s *Store) error {
-	return nil
+	failed bool
 }
 
 
