@@ -143,12 +143,22 @@ func updateFile(s *Store) error {
 }
 
 
-func syncFile(s *Store) error {
-	if err := writePages(s); err != nil {
+func updateOrRevert(s *Store, meta[]byte) error {
+	if s.failed {
+		if err := updateRoot(s); err != nil {
 		return err
 	}
-	if err := syscall.Fsync(s.fileDescriptor); err != nil {
+		if err := syscall.Fsync(s.fileDescriptor); err != nil{
 		return err
+		}
+		loadMeta(s, meta)
+		s.failed = false
+	}
+	err := updateFile(s)
+	if err != nil {
+		loadMeta(s, meta)
+		s.page.temp = s.page.temp[:0]
+		s.failed = true
 	}
 	return nil
 }
