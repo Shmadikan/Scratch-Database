@@ -54,6 +54,91 @@ func extendMmap(s *Store, size int) error {
 		return fmt.Errorf("mmap error: %b", mmap)
 	}
 	s.mmap.chunks = append(s.mmap.chunks, mmap)
+	s.mmap.total += len(mmap)
+	return nil
+}
+
+
+func (s *Store) pageAppend(node []byte) uint64 {
+	s.page.temp = append(s.page.temp, node)
+	return uint64(s.page.flushed + uint64(len(s.page.temp)))
+}
+
+
+func writePages(s *Store) error {
+	sum := 0
+	for _, temp := range s.page.temp {
+		sum += len(temp)
+	}
+	err := extendMmap(s, s.mmap.total + sum)
+	if err != nil {
+		return fmt.Errorf("erro while extending pages: %s", err)
+	}
+	_, err = unix.Pwritev(s.fileDescriptor, s.page.temp, int64(s.page.flushed * b.PAGESIZE))
+	if err != nil {
+		return fmt.Errorf("error while writing in file: %s", err)
+	}
+	s.page.flushed += uint64(len(s.page.temp))
+	s.page.temp = s.page.temp[:0]
+	return nil
+}
+
+
+func saveMeta(s *Store) []byte {
+	data := make([]byte, 32)
+	copy(data, []byte(DB_SIG))
+	binary.LittleEndian.PutUint64(data[16:], s.tree.RootPageNumber)
+	binary.LittleEndian.PutUint64(data[24:], s.page.flushed)
+	return data
+}
+
+
+func loadMeta(s *Store, data []byte) {
+	s.tree.RootPageNumber = binary.LittleEndian.Uint64(data[16:])
+	s.page.flushed = binary.LittleEndian.Uint64(data[24:])
+}
+
+
+func readRoot(s *Store, fileSize int64) error {
+	if fileSize == 0 {
+		s.page.flushed = 1
+		return nil
+	}
+	startPage := s.pageRead(0)
+	loadMeta(s, startPage)
+	if binary.LittleEndian.Uint64(startPage[16:]) != s.tree.RootPageNumber {
+		return fmt.Errorf("Corrupted root page. Rootptr is Corrupted")
+	}
+	if binary.LittleEndian.Uint64(startPage[24:]) != s.page.flushed {
+		return fmt.Errorf("Corrupted root page. Rootptr is Corrupted")
+	}
+	return nil
+}
+
+
+func updateRoot(s *Store) error {
+	_, err := syscall.Pwrite(s.fileDescriptor, saveMeta(s), 0)
+	if err != nil {
+		return fmt.Errorf("Error while writing: %s", err)
+	}
+	return nil
+}
+
+
+func updateFile(s *Store) error {
+	err := writePages(s)
+	if err != nil {
+		return fmt.Errorf("Error with update file: %s", err)
+	}
+	if err = syscall.Fsync(s.fileDescriptor); err != nil {
+		return fmt.Errorf("Error with fsync:%s", err)
+	}
+	if err = updateRoot(s); err != nil {
+		return fmt.Errorf("Error with update file:%s", err)
+	}
+	if err = syscall.Fsync(s.fileDescriptor); err != nil {
+		return fmt.Errorf("Error with fsync:%s", err)
+	}
 	return nil
 }
 
