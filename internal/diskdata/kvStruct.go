@@ -178,10 +178,10 @@ func (s *Store) Get(key []byte) ([]byte, bool) {
 
 func (s *Store) Set(key []byte, value []byte) error {
 	s.tree.Insert(key, value)
-	return syncFile(s)
+	return updateFile(s)
 }
 
 func (s *Store) Delete(key []byte) (bool, error) {
 	deleted := s.tree.Delete(key)
-	return deleted, syncFile(s)
+	return deleted, updateFile(s)
 }
