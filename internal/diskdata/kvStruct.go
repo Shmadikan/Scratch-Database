@@ -1,10 +1,11 @@
 package diskdata
 
 import (
+	"encoding/binary"
 	"fmt"
 	"syscall"
-
-	b "github.com/Shmadikan/Scratch-Database/internal/btree"
+	"golang.org/x/sys/unix"
+	b "github.com/Shmadikan/Scratch-Database/internal/btree"	
 )
 
 type Store struct {
