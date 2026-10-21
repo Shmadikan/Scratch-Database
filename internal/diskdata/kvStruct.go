@@ -1,7 +1,7 @@
 package diskdata
 
 import (
-	"github.com/Shmadikan/Scratch-Database/internal/btree"
+	"fmt"
 	"syscall"
 
 	b "github.com/Shmadikan/Scratch-Database/internal/btree"
